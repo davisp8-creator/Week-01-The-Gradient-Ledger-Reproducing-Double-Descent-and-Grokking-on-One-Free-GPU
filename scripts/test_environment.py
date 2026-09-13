@@ -1,20 +1,37 @@
-"""Verify the local Python environment for this project.
+"""Verify (and repair) the local Python environment for this project.
 
 Checks Python version and that PyTorch, NumPy, pandas, matplotlib, and
 scikit-learn are installed and functional, then exercises each with a
 small operation so a broken install (e.g. missing wheels, bad CUDA
 build) fails loudly instead of silently at import time.
 
+Any missing package is pip-installed automatically (into the current
+interpreter, via `sys.executable -m pip`) before its check runs. Pass
+--no-install to just report what's missing instead of installing it.
+
+Python itself cannot be auto-installed here: this script needs a
+working interpreter to run at all, so if the *running* interpreter is
+too old, the best it can do is install a newer Python alongside it
+(via winget/apt/brew) and tell you to re-run with that interpreter.
+
 Usage:
-    python scripts/test_environment.py
+    python scripts/test_environment.py [--no-install]
 """
 
+import shutil
+import subprocess
 import sys
 import tempfile
 import traceback
 from pathlib import Path
 
 MIN_PYTHON = (3, 10)
+AUTO_INSTALL = "--no-install" not in sys.argv[1:]
+
+# import name -> pip package name, for packages where they differ
+PIP_NAME = {
+    "sklearn": "scikit-learn",
+}
 
 results: list[tuple[str, bool, str]] = []
 
@@ -28,17 +45,63 @@ def check(name: str, fn):
         traceback.print_exc()
 
 
+def ensure_import(import_name: str):
+    """Import a module, pip-installing it first if it's missing."""
+    try:
+        return __import__(import_name)
+    except ImportError:
+        if not AUTO_INSTALL:
+            raise
+        pip_name = PIP_NAME.get(import_name, import_name)
+        print(f"'{import_name}' not found - installing '{pip_name}' via pip...")
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--quiet", pip_name],
+            check=True,
+        )
+        return __import__(import_name)
+
+
 def check_python_version() -> str:
     if sys.version_info < MIN_PYTHON:
+        required = f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]}"
+        found = f"{sys.version_info.major}.{sys.version_info.minor}"
+        if AUTO_INSTALL:
+            installer = _install_newer_python()
+            if installer:
+                raise RuntimeError(
+                    f"Python {required}+ required, found {found}. Installed a newer "
+                    f"Python via {installer} - re-run this script using that "
+                    f"interpreter (this process can't hot-swap itself)."
+                )
         raise RuntimeError(
-            f"Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required, "
-            f"found {sys.version_info.major}.{sys.version_info.minor}"
+            f"Python {required}+ required, found {found}. Install a newer Python "
+            f"from https://python.org/downloads and re-run this script with it."
         )
     return f"Python {sys.version.split()[0]}"
 
 
+def _install_newer_python() -> str | None:
+    """Best-effort install of a newer Python via the platform package manager."""
+    target = f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]}"
+    if shutil.which("winget"):
+        cmd = ["winget", "install", "--id", f"Python.Python.{target}", "-e", "--silent"]
+    elif shutil.which("brew"):
+        cmd = ["brew", "install", f"python@{target}"]
+    elif shutil.which("apt-get"):
+        cmd = ["sudo", "apt-get", "install", "-y", f"python{target}"]
+    else:
+        return None
+    print(f"Attempting to install Python {target} via: {' '.join(cmd)}")
+    try:
+        subprocess.run(cmd, check=True)
+        return cmd[0]
+    except (subprocess.CalledProcessError, OSError) as exc:
+        print(f"Automatic install failed ({exc}); install Python manually instead.")
+        return None
+
+
 def check_numpy() -> str:
-    import numpy as np
+    np = ensure_import("numpy")
 
     arr = np.arange(9, dtype=np.float64).reshape(3, 3)
     assert arr.sum() == 36.0
@@ -48,7 +111,7 @@ def check_numpy() -> str:
 
 
 def check_pandas() -> str:
-    import pandas as pd
+    pd = ensure_import("pandas")
 
     df = pd.DataFrame({"width": [4, 8, 16], "test_error": [0.5, 0.3, 0.4]})
     grouped = df.groupby(df["width"] > 4)["test_error"].mean()
@@ -57,7 +120,7 @@ def check_pandas() -> str:
 
 
 def check_matplotlib() -> str:
-    import matplotlib
+    matplotlib = ensure_import("matplotlib")
 
     matplotlib.use("Agg")  # headless backend, no display required
     import matplotlib.pyplot as plt
@@ -73,7 +136,7 @@ def check_matplotlib() -> str:
 
 
 def check_sklearn() -> str:
-    import sklearn
+    sklearn = ensure_import("sklearn")
     from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import train_test_split
@@ -87,7 +150,7 @@ def check_sklearn() -> str:
 
 
 def check_pytorch() -> str:
-    import torch
+    torch = ensure_import("torch")
 
     x = torch.randn(4, 4, requires_grad=True)
     y = (x ** 2).sum()
