@@ -42,14 +42,24 @@ torch.manual_seed(0)
 class ManualMLP:
     """Two-layer MLP: Linear -> ReLU -> Linear -> softmax cross-entropy."""
 
-    def __init__(self, in_dim: int, hidden_dim: int, out_dim: int, dtype=torch.float32):
+    def __init__(
+        self,
+        in_dim: int,
+        hidden_dim: int,
+        out_dim: int,
+        dtype=torch.float32,
+        device: torch.device | str = "cpu",
+    ):
+        # Random init always drawn on CPU with a CPU generator, then moved to
+        # `device` -- CUDA generators aren't interchangeable with CPU ones,
+        # and this keeps the same seed reproducible regardless of device.
         g = torch.Generator().manual_seed(0)
         scale1 = (2.0 / in_dim) ** 0.5
         scale2 = (2.0 / hidden_dim) ** 0.5
-        self.W1 = torch.randn(in_dim, hidden_dim, generator=g, dtype=dtype) * scale1
-        self.b1 = torch.zeros(hidden_dim, dtype=dtype)
-        self.W2 = torch.randn(hidden_dim, out_dim, generator=g, dtype=dtype) * scale2
-        self.b2 = torch.zeros(out_dim, dtype=dtype)
+        self.W1 = (torch.randn(in_dim, hidden_dim, generator=g, dtype=dtype) * scale1).to(device)
+        self.b1 = torch.zeros(hidden_dim, dtype=dtype, device=device)
+        self.W2 = (torch.randn(hidden_dim, out_dim, generator=g, dtype=dtype) * scale2).to(device)
+        self.b2 = torch.zeros(out_dim, dtype=dtype, device=device)
         self._cache = {}
 
     def params(self) -> dict[str, torch.Tensor]:
@@ -136,11 +146,15 @@ def relative_error(a: torch.Tensor, b: torch.Tensor) -> float:
 
 
 def main() -> None:
-    in_dim, hidden_dim, out_dim, batch = 5, 6, 3, 8
-    model = ManualMLP(in_dim, hidden_dim, out_dim)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device_name = torch.cuda.get_device_name(0) if device.type == "cuda" else "cpu"
+    print(f"device = {device} ({device_name})")
 
-    X = torch.randn(batch, in_dim)
-    y = torch.randint(0, out_dim, (batch,))
+    in_dim, hidden_dim, out_dim, batch = 5, 6, 3, 8
+    model = ManualMLP(in_dim, hidden_dim, out_dim, device=device)
+
+    X = torch.randn(batch, in_dim, device=device)
+    y = torch.randint(0, out_dim, (batch,), device=device)
 
     manual_loss = model.loss(X, y)
     manual_grads = model.backward(y)
