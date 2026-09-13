@@ -39,10 +39,16 @@ def load_final_epoch(csv_path: Path) -> pd.DataFrame:
     return df[df["epoch"] == last_epoch].copy()
 
 
-def find_interpolation_threshold(final_df: pd.DataFrame) -> int | None:
-    """Smallest width whose mean (across seeds) train error is exactly zero."""
+def find_interpolation_threshold(final_df: pd.DataFrame, tol: float = 0.01) -> int | None:
+    """Smallest width whose mean (across seeds) train error is ~zero.
+
+    Requiring *exactly* zero can lag well behind where models have
+    effectively interpolated, if even one seed is still inching down --
+    `tol` (default 1% mean training error) matches how the literature
+    usually defines "reached the interpolation threshold".
+    """
     by_width = final_df.groupby("width")["train_error"].mean().sort_index()
-    zeroed = by_width[by_width <= 1e-9]
+    zeroed = by_width[by_width <= tol]
     return int(zeroed.index[0]) if len(zeroed) else None
 
 
@@ -50,6 +56,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", type=Path, default=Path("results/double_descent.csv"))
     parser.add_argument("--out", type=Path, default=Path("results/double_descent.png"))
+    parser.add_argument(
+        "--threshold-tol",
+        type=float,
+        default=0.01,
+        help="mean train error below this counts as 'interpolated' (default 1%%)",
+    )
     args = parser.parse_args()
 
     final_df = load_final_epoch(args.csv)
@@ -58,7 +70,7 @@ def main() -> None:
         .agg(mean="mean", min="min", max="max")
         .sort_index()
     )
-    threshold = find_interpolation_threshold(final_df)
+    threshold = find_interpolation_threshold(final_df, tol=args.threshold_tol)
 
     fig, ax = plt.subplots(figsize=(7, 4.5), facecolor=SURFACE)
     ax.set_facecolor(SURFACE)
@@ -122,9 +134,12 @@ def main() -> None:
     print("\nPer-width summary (final epoch, across seeds):")
     print(summary.round(3).to_string())
     if threshold is not None:
-        print(f"\nInterpolation threshold (first width with mean train_error == 0): {threshold}")
+        print(
+            f"\nInterpolation threshold (first width with mean train_error "
+            f"<= {args.threshold_tol:.0%}): {threshold}"
+        )
     else:
-        print("\nNo width reached mean train_error == 0 in this sweep.")
+        print(f"\nNo width reached mean train_error <= {args.threshold_tol:.0%} in this sweep.")
 
 
 if __name__ == "__main__":

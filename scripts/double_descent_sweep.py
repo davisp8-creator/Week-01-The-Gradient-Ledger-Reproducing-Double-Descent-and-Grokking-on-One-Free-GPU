@@ -33,11 +33,18 @@ import torch.nn.functional as F
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
-DEFAULT_WIDTHS = [4, 8, 16, 32, 64, 128, 256, 512]
-DEFAULT_SEEDS = [0, 1, 2]
+# Widths concentrated around the expected interpolation threshold: a 2-layer
+# MLP with n_features inputs and 2 outputs has
+# params(w) = w*(n_features + 1) + w*2 + 2 = w*(n_features + 3) + 2.
+# With the defaults below (n_features=10, 500 training examples), that
+# crosses 500 near w ~= 38 -- hence the denser spacing from 24 to 64.
+DEFAULT_WIDTHS = [2, 4, 8, 16, 24, 32, 40, 48, 64, 80, 96, 128, 192, 256, 384, 512]
+DEFAULT_SEEDS = [0, 1, 2, 3, 4]
 
 
-def make_noisy_dataset(n_samples: int, n_features: int, label_noise: float, seed: int):
+def make_noisy_dataset(
+    n_samples: int, n_features: int, label_noise: float, test_size: float, seed: int
+):
     """Synthetic binary classification data with a fraction of labels flipped."""
     X, y = make_classification(
         n_samples=n_samples,
@@ -53,7 +60,7 @@ def make_noisy_dataset(n_samples: int, n_features: int, label_noise: float, seed
         flip_mask = rng.random(n_samples) < label_noise
         y = y.copy()
         y[flip_mask] = 1 - y[flip_mask]
-    return train_test_split(X, y, test_size=0.5, random_state=seed, stratify=y)
+    return train_test_split(X, y, test_size=test_size, random_state=seed, stratify=y)
 
 
 class MLP(nn.Module):
@@ -122,11 +129,12 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=Path("results/double_descent.csv"))
     parser.add_argument("--widths", type=int, nargs="+", default=DEFAULT_WIDTHS)
     parser.add_argument("--seeds", type=int, nargs="+", default=DEFAULT_SEEDS)
-    parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--n-samples", type=int, default=400)
-    parser.add_argument("--n-features", type=int, default=20)
-    parser.add_argument("--label-noise", type=float, default=0.15)
+    parser.add_argument("--n-samples", type=int, default=1000)
+    parser.add_argument("--n-features", type=int, default=10)
+    parser.add_argument("--label-noise", type=float, default=0.20)
+    parser.add_argument("--test-size", type=float, default=0.5)
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -150,7 +158,7 @@ def main() -> None:
         writer.writeheader()
         for seed in args.seeds:
             X_train, X_test, y_train, y_test = make_noisy_dataset(
-                args.n_samples, args.n_features, args.label_noise, seed
+                args.n_samples, args.n_features, args.label_noise, args.test_size, seed
             )
             for width in args.widths:
                 rows = train_one_run(
