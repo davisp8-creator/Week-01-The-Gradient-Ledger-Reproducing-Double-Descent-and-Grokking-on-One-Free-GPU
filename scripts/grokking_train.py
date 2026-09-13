@@ -13,11 +13,20 @@ CSV schema (one row every --log-every steps)
     step            int    gradient step index (0-based)
     train_acc       float  fraction of train pairs classified correctly
     test_acc        float  fraction of test pairs classified correctly
+    train_loss      float  mean cross-entropy loss on the train set
+    test_loss       float  mean cross-entropy loss on the held-out set
     weight_l2_norm  float  L2 norm of all model parameters concatenated
+    weight_decay    float  the run's AdamW weight decay (constant per run;
+                           lets multiple runs be concatenated for comparison)
+    train_frac      float  the run's train split fraction (same reason)
+    seed            int    the run's random seed (data split + model init;
+                           same reason -- see SEED_AUDIT.md)
 
 Usage:
     python scripts/grokking_train.py --dry-run
     python scripts/grokking_train.py --steps 20000 --out results/grokking.csv
+    python scripts/grokking_train.py --weight-decay 0.0 --out results/grokking_wd0.csv
+    python scripts/grokking_train.py --train-frac 0.3 --out results/grokking_frac0.3.csv
 """
 
 import argparse
@@ -119,7 +128,17 @@ def main() -> None:
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = ["step", "train_acc", "test_acc", "weight_l2_norm"]
+    fieldnames = [
+        "step",
+        "train_acc",
+        "test_acc",
+        "train_loss",
+        "test_loss",
+        "weight_l2_norm",
+        "weight_decay",
+        "train_frac",
+        "seed",
+    ]
 
     with args.out.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -135,15 +154,23 @@ def main() -> None:
             if step % args.log_every == 0 or step == args.steps - 1:
                 model.eval()
                 with torch.no_grad():
-                    train_acc = accuracy(model(a_tr, b_tr), y_tr)
-                    test_acc = accuracy(model(a_te, b_te), y_te)
+                    train_logits, test_logits = model(a_tr, b_tr), model(a_te, b_te)
+                    train_acc = accuracy(train_logits, y_tr)
+                    test_acc = accuracy(test_logits, y_te)
+                    train_loss = F.cross_entropy(train_logits, y_tr).item()
+                    test_loss = F.cross_entropy(test_logits, y_te).item()
                 norm = weight_l2_norm(model)
                 writer.writerow(
                     {
                         "step": step,
                         "train_acc": train_acc,
                         "test_acc": test_acc,
+                        "train_loss": train_loss,
+                        "test_loss": test_loss,
                         "weight_l2_norm": norm,
+                        "weight_decay": args.weight_decay,
+                        "train_frac": args.train_frac,
+                        "seed": args.seed,
                     }
                 )
                 print(

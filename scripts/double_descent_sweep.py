@@ -20,6 +20,8 @@ CSV schema (one row per width x seed x epoch)
 Usage:
     python scripts/double_descent_sweep.py --dry-run
     python scripts/double_descent_sweep.py --out results/double_descent.csv
+    python scripts/double_descent_sweep.py --weight-decay 0.1 --out results/double_descent_wd0.1.csv
+    python scripts/double_descent_sweep.py --optimizer sgd --out results/double_descent_sgd.csv
 """
 
 import argparse
@@ -33,13 +35,26 @@ import torch.nn.functional as F
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
-# Widths concentrated around the expected interpolation threshold: a 2-layer
-# MLP with n_features inputs and 2 outputs has
-# params(w) = w*(n_features + 1) + w*2 + 2 = w*(n_features + 3) + 2.
-# With the defaults below (n_features=10, 500 training examples), that
-# crosses 500 near w ~= 38 -- hence the denser spacing from 24 to 64.
-DEFAULT_WIDTHS = [2, 4, 8, 16, 24, 32, 40, 48, 64, 80, 96, 128, 192, 256, 384, 512]
-DEFAULT_SEEDS = [0, 1, 2, 3, 4]
+DEFAULT_SEEDS = list(range(10))
+
+
+def interpolation_threshold(n_train: int, n_features: int, out_dim: int = 2) -> float:
+    """Hidden width at which a 2-layer MLP's parameter count equals n_train.
+
+    params(w) = w*(n_features + 1) + w*out_dim + out_dim
+              = w*(n_features + out_dim + 1) + out_dim
+    """
+    return (n_train - out_dim) / (n_features + out_dim + 1)
+
+
+def auto_widths(n_train: int, n_features: int, out_dim: int = 2) -> list[int]:
+    """Widths spanning ~0.05x to ~15x the analytic interpolation threshold,
+    concentrated near it, so the sweep always straddles the crossing point
+    for whatever n_samples/n_features/test_size are in play."""
+    threshold = interpolation_threshold(n_train, n_features, out_dim)
+    factors = [0.05, 0.1, 0.2, 1 / 3, 0.5, 0.75, 1.0, 1.33, 1.67, 2, 3, 5, 8, 12, 15]
+    widths = sorted({max(2, round(threshold * f)) for f in factors})
+    return widths
 
 
 def make_noisy_dataset(
@@ -80,6 +95,16 @@ def error_rate(logits: torch.Tensor, y: torch.Tensor) -> float:
     return (logits.argmax(dim=1) != y).float().mean().item()
 
 
+def make_optimizer(
+    params, optimizer: str, lr: float, weight_decay: float, momentum: float
+) -> torch.optim.Optimizer:
+    if optimizer == "adam":
+        return torch.optim.Adam(params, lr=lr, weight_decay=weight_decay)
+    if optimizer == "sgd":
+        return torch.optim.SGD(params, lr=lr, momentum=momentum, weight_decay=weight_decay)
+    raise ValueError(f"unknown optimizer: {optimizer}")
+
+
 def train_one_run(
     width: int,
     seed: int,
@@ -90,10 +115,13 @@ def train_one_run(
     epochs: int,
     lr: float,
     device: torch.device,
+    optimizer: str = "adam",
+    weight_decay: float = 0.0,
+    momentum: float = 0.0,
 ) -> list[dict]:
     torch.manual_seed(seed)
     model = MLP(X_train.shape[1], width, 2).to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    opt = make_optimizer(model.parameters(), optimizer, lr, weight_decay, momentum)
 
     Xtr = torch.tensor(X_train, dtype=torch.float32, device=device)
     ytr = torch.tensor(y_train, dtype=torch.long, device=device)
@@ -127,7 +155,13 @@ def train_one_run(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=Path("results/double_descent.csv"))
-    parser.add_argument("--widths", type=int, nargs="+", default=DEFAULT_WIDTHS)
+    parser.add_argument(
+        "--widths",
+        type=int,
+        nargs="+",
+        default=None,
+        help="defaults to widths auto-centered on the analytic interpolation threshold",
+    )
     parser.add_argument("--seeds", type=int, nargs="+", default=DEFAULT_SEEDS)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -135,12 +169,20 @@ def main() -> None:
     parser.add_argument("--n-features", type=int, default=10)
     parser.add_argument("--label-noise", type=float, default=0.20)
     parser.add_argument("--test-size", type=float, default=0.5)
+    parser.add_argument("--optimizer", choices=["adam", "sgd"], default="adam")
+    parser.add_argument("--weight-decay", type=float, default=0.0)
+    parser.add_argument("--momentum", type=float, default=0.0, help="only used by --optimizer sgd")
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="tiny run (2 widths, 1 seed, 5 epochs) to sanity-check the CSV schema",
     )
     args = parser.parse_args()
+
+    n_train = int(args.n_samples * (1 - args.test_size))
+    if args.widths is None:
+        args.widths = auto_widths(n_train, args.n_features)
+        print(f"auto widths (threshold ~= {interpolation_threshold(n_train, args.n_features):.1f}): {args.widths}")
 
     if args.dry_run:
         args.widths = args.widths[:2]
@@ -162,7 +204,18 @@ def main() -> None:
             )
             for width in args.widths:
                 rows = train_one_run(
-                    width, seed, X_train, y_train, X_test, y_test, args.epochs, args.lr, device
+                    width,
+                    seed,
+                    X_train,
+                    y_train,
+                    X_test,
+                    y_test,
+                    args.epochs,
+                    args.lr,
+                    device,
+                    optimizer=args.optimizer,
+                    weight_decay=args.weight_decay,
+                    momentum=args.momentum,
                 )
                 writer.writerows(rows)
                 last = rows[-1]

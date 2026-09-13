@@ -1,0 +1,9 @@
+# Versions captured from the local dev environment (Python 3.14.7) via
+# scripts/test_environment.py. Colab installs its own CUDA build of torch
+# (e.g. "2.14.0+cu121") instead of the +cpu build pinned here -- that's
+# expected and fine, only the base version needs to line up.
+numpy==2.5.3
+pandas==3.0.5
+matplotlib==3.11.2
+scikit-learn==1.9.1
+torch==2.14.0

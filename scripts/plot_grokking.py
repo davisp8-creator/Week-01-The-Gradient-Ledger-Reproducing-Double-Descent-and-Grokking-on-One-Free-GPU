@@ -1,10 +1,12 @@
-"""Plot train/test accuracy and weight norm vs. training step for grokking.
+"""Plot train/test accuracy, loss, and weight norm vs. step for grokking.
 
 Reads results/grokking.csv (schema documented in scripts/grokking_train.py)
-and draws two stacked panels sharing a step axis: train/test accuracy on
-top, weight L2 norm below. Marks the step where test accuracy first crosses
-99% -- the grokking transition -- as a vertical line on both panels, so the
-weight-norm dip that drives it lines up visually with the accuracy jump.
+and draws three stacked panels sharing a step axis: train/test accuracy,
+train/test loss (log scale -- loss often shows the generalizing solution
+winning out before the hard accuracy metric flips), and weight L2 norm.
+Marks the step where test accuracy first crosses 99% -- the grokking
+transition -- as a vertical line on all three panels, so the loss dip and
+weight-norm dip that drive it line up visually with the accuracy jump.
 
 Usage:
     python scripts/plot_grokking.py
@@ -55,10 +57,15 @@ def main() -> None:
     transition_step = find_grokking_step(df, args.threshold)
     chance_level = 1.0 / args.modulus
 
-    fig, (ax_acc, ax_norm) = plt.subplots(
-        2, 1, figsize=(7, 6.5), sharex=True,
-        gridspec_kw={"height_ratios": [1.3, 1]}, facecolor=SURFACE,
+    has_loss = "train_loss" in df.columns
+
+    n_panels = 3 if has_loss else 2
+    fig, axes = plt.subplots(
+        n_panels, 1, figsize=(7, 6.5 if n_panels == 2 else 8.5), sharex=True,
+        gridspec_kw={"height_ratios": ([1.3, 1] if n_panels == 2 else [1.2, 1, 1])},
+        facecolor=SURFACE,
     )
+    ax_acc, ax_loss, ax_norm = (axes[0], axes[1], axes[2]) if has_loss else (axes[0], None, axes[1])
 
     # --- top panel: train/test accuracy ---
     ax_acc.set_facecolor(SURFACE)
@@ -67,10 +74,21 @@ def main() -> None:
     ax_acc.plot(df["step"], df["test_acc"], color=COLOR_TEST, linewidth=2, label="test accuracy")
     ax_acc.set_ylabel("accuracy", color=COLOR_TEXT_SECONDARY)
     ax_acc.set_title(
-        "Grokking on modular addition (mod 97): accuracy and weight norm vs. step",
+        "Grokking on modular addition (mod 97): accuracy, loss, and weight norm vs. step"
+        if has_loss
+        else "Grokking on modular addition (mod 97): accuracy and weight norm vs. step",
         color=COLOR_TEXT_PRIMARY, fontsize=12,
     )
     ax_acc.set_ylim(-0.05, 1.05)
+
+    # --- middle panel: train/test loss (log scale) ---
+    if has_loss:
+        ax_loss.set_facecolor(SURFACE)
+        ax_loss.plot(df["step"], df["train_loss"], color=COLOR_TRAIN, linewidth=2, label="train loss")
+        ax_loss.plot(df["step"], df["test_loss"], color=COLOR_TEST, linewidth=2, label="test loss")
+        ax_loss.set_yscale("log")
+        ax_loss.set_ylabel("cross-entropy loss", color=COLOR_TEXT_SECONDARY)
+        ax_loss.legend(frameon=False, labelcolor=COLOR_TEXT_SECONDARY, loc="upper right", fontsize=9)
 
     # --- bottom panel: weight L2 norm ---
     ax_norm.set_facecolor(SURFACE)
@@ -78,13 +96,14 @@ def main() -> None:
     ax_norm.set_ylabel("weight L2 norm", color=COLOR_TEXT_SECONDARY)
     ax_norm.set_xlabel("training step", color=COLOR_TEXT_SECONDARY)
 
+    panels = (ax_acc, ax_loss, ax_norm) if has_loss else (ax_acc, ax_norm)
     if transition_step is not None:
-        for ax in (ax_acc, ax_norm):
+        for ax in panels:
             ax.axvline(transition_step, color=COLOR_TRANSITION, linestyle="--", linewidth=1.5)
         ax_acc.plot([], [], color=COLOR_TRANSITION, linestyle="--", linewidth=1.5,
                     label=f"grokking transition (step = {transition_step})")
 
-    for ax in (ax_acc, ax_norm):
+    for ax in panels:
         ax.grid(True, color=COLOR_GRID, linewidth=0.8)
         ax.set_axisbelow(True)
         for spine in ("top", "right"):
