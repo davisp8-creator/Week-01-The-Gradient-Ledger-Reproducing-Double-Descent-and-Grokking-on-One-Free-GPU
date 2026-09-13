@@ -70,7 +70,7 @@ def main() -> None:
         parser.error(f"at most {len(SERIES_COLORS)} series are supported for color safety")
 
     fig, (ax_acc, ax_norm) = plt.subplots(
-        2, 1, figsize=(7, 6.5), sharex=True, facecolor=SURFACE
+        2, 1, figsize=(8.5, 6.5), sharex=True, facecolor=SURFACE
     )
 
     print(f"{'label':28s} {'transition step':>16s}")
@@ -98,11 +98,14 @@ def main() -> None:
             ax.spines[spine].set_color(COLOR_AXIS)
         ax.tick_params(colors=COLOR_TEXT_MUTED)
 
-    ax_acc.legend(frameon=False, labelcolor=COLOR_TEXT_SECONDARY, loc="center right", fontsize=9)
+    ax_acc.legend(
+        frameon=False, labelcolor=COLOR_TEXT_SECONDARY, fontsize=9,
+        loc="upper left", bbox_to_anchor=(1.01, 1.0),
+    )
 
     fig.tight_layout()
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(args.out, dpi=150)
+    fig.savefig(args.out, dpi=150, bbox_inches="tight")
     print(f"\nWrote {args.out}")
 
 

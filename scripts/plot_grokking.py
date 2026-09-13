@@ -74,9 +74,7 @@ def main() -> None:
     ax_acc.plot(df["step"], df["test_acc"], color=COLOR_TEST, linewidth=2, label="test accuracy")
     ax_acc.set_ylabel("accuracy", color=COLOR_TEXT_SECONDARY)
     ax_acc.set_title(
-        "Grokking on modular addition (mod 97): accuracy, loss, and weight norm vs. step"
-        if has_loss
-        else "Grokking on modular addition (mod 97): accuracy and weight norm vs. step",
+        "Grokking on modular addition (mod 97)",
         color=COLOR_TEXT_PRIMARY, fontsize=12,
     )
     ax_acc.set_ylim(-0.05, 1.05)
