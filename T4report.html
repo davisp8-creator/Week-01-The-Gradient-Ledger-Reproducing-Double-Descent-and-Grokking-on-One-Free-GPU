@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Gradient Ledger &mdash; t4gpu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --paper:        #faf8f1;
+    --band:         #eef2e6;
+    --band-strong:  #e3ead9;
+    --ink:          #202b23;
+    --ink-soft:     #55605a;
+    --ink-faint:    #85897f;
+    --rule:         #c7cec0;
+    --rule-strong:  #9aa693;
+    --accent:       #9a3324;
+    --accent-soft:  #f2e2dc;
+    --brass:        #8a6a2f;
+    --brass-soft:   #efe6d1;
+    --link:         #2c5a4a;
+    --font-display: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --font-body:    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono:    "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #14181a; --band: #1b241f; --band-strong: #212d25;
+      --ink: #e7ece4; --ink-soft: #b7bfb5; --ink-faint: #7c877e;
+      --rule: #333e37; --rule-strong: #48564c;
+      --accent: #e2795f; --accent-soft: #3a241d;
+      --brass: #cca757; --brass-soft: #362c1a; --link: #7fbfa2;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #14181a; --band: #1b241f; --band-strong: #212d25;
+    --ink: #e7ece4; --ink-soft: #b7bfb5; --ink-faint: #7c877e;
+    --rule: #333e37; --rule-strong: #48564c;
+    --accent: #e2795f; --accent-soft: #3a241d;
+    --brass: #cca757; --brass-soft: #362c1a; --link: #7fbfa2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink); font-family: var(--font-body);
+    font-size: 15.5px; line-height: 1.6; margin: 0;
+    padding-inline: 20px; padding-block: 40px 80px;
+  }
+  .sheet { max-width: 860px; margin-inline: auto; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+  }
+  .masthead { border-bottom: 3px double var(--rule-strong); padding-bottom: 22px; margin-bottom: 22px; }
+  .masthead h1 { font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 700; margin-top: 6px; }
+  .masthead p.dek { max-width: 62ch; color: var(--ink-soft); margin-top: 10px; font-size: 1.02rem; }
+  .manifest {
+    background: var(--band); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 16px 20px; margin-block: 26px 34px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 24px;
+  }
+  .manifest .field .k {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .manifest .field .v {
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    font-size: 13.5px; color: var(--ink); margin-top: 2px;
+  }
+  .manifest .field .v.note { font-family: var(--font-body); color: var(--ink-soft); font-size: 13px; }
+  .entry { position: relative; padding-left: 54px; margin-block: 40px; }
+  .entry::before {
+    content: attr(data-n); position: absolute; left: 0; top: 2px;
+    font-family: var(--font-mono); font-weight: 600; font-size: 13px; color: var(--accent);
+    border: 1px solid var(--accent); border-radius: 2px; width: 34px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .entry h2 { font-size: 1.5rem; font-weight: 600; }
+  .entry .file { font-family: var(--font-mono); font-size: 12.5px; color: var(--link); }
+  .entry .lede { color: var(--ink-soft); max-width: 68ch; margin-top: 8px; }
+  .stamp {
+    float: right; border: 1px solid var(--brass); color: var(--brass); background: var(--brass-soft);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+    padding: 5px 10px; border-radius: 2px; text-align: center; margin-left: 14px; margin-bottom: 8px;
+  }
+  .stamp .n { display: block; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  table.runs { width: 100%; border-collapse: collapse; margin-block: 18px; font-size: 13.5px; }
+  table.runs caption {
+    text-align: left; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px;
+  }
+  table.runs th {
+    text-align: left; font-family: var(--font-mono); font-weight: 600; font-size: 11.5px;
+    letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule-strong); padding: 7px 10px;
+  }
+  table.runs td {
+    padding: 7px 10px; border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums; vertical-align: top;
+  }
+  table.runs tbody tr:nth-child(odd) { background: var(--band); }
+  table.runs td.num, table.runs td.dur { font-family: var(--font-mono); }
+  table.runs td.result { font-family: var(--font-body); color: var(--ink-soft); max-width: 30ch; }
+  table.runs tr.baseline-row td { font-weight: 600; }
+  table.runs td.never { color: var(--accent); font-family: var(--font-mono); }
+  .frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; margin-block: 20px; }
+  figure { margin: 0; border: 1px solid var(--rule); background: var(--paper); border-radius: 3px; overflow: hidden; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft);
+    padding: 9px 12px; border-top: 1px solid var(--rule); background: var(--band);
+  }
+  pre.console {
+    font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft);
+    background: var(--band); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 12px 14px; overflow-x: auto; white-space: pre-wrap;
+  }
+  .rule { border: none; border-top: 1px solid var(--rule); margin-block: 40px; }
+  footer {
+    margin-top: 56px; padding-top: 22px; border-top: 3px double var(--rule-strong);
+    font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft);
+    display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between;
+  }
+  footer .total .n { color: var(--accent); font-weight: 600; font-size: 14px; }
+  @media (max-width: 480px) {
+    .entry { padding-left: 0; }
+    .entry::before { position: static; margin-bottom: 8px; }
+    .stamp { float: none; display: inline-block; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="masthead">
+    <span class="eyebrow">Experiment Log &middot; Week 01 &middot; CST 627 &middot; tag: t4gpu</span>
+    <h1>The Gradient Ledger</h1>
+    <p class="dek">Auto-generated from scripts/run_full_suite.py + scripts/generate_report.py. Same suite as report.html, run on: <strong>Tesla T4</strong>.</p>
+  </div>
+  <div class="manifest"><div class="field"><div class="k">CPU</div><div class="v">Intel(R) Xeon(R) CPU @ 2.00GHz</div></div><div class="field"><div class="k">Cores / threads</div><div class="v">2</div></div><div class="field"><div class="k">Memory</div><div class="v">12.7 GiB</div></div><div class="field"><div class="k">GPU</div><div class="v note">Tesla T4 (14.6 GiB VRAM)</div></div><div class="field"><div class="k">OS</div><div class="v note">Linux 6.6.122+ (build #1 SMP Thu Apr 30 18:17:14 UTC 2026)</div></div><div class="field"><div class="k">Python</div><div class="v">3.13.15</div></div><div class="field"><div class="k">torch</div><div class="v">2.11.0+cu128</div></div><div class="field"><div class="k">numpy / pandas</div><div class="v">2.1.3 / 2.2.3</div></div><div class="field"><div class="k">matplotlib / scikit-learn</div><div class="v">3.10.0 / 1.6.1</div></div></div>
+
+  <div class="entry" data-n="00">
+    <div class="stamp">DURATION<span class="n">4.0s</span></div>
+    <h2>Environment verification</h2>
+    <div class="file">scripts/test_environment.py</div>
+    <pre class="console">============================================================
+Environment check summary
+============================================================
+[PASS] Python version  Python 3.13.15
+[PASS] NumPy           numpy 2.1.3
+[PASS] pandas          pandas 2.2.3
+[PASS] matplotlib      matplotlib 3.10.0
+[PASS] scikit-learn    scikit-learn 1.6.1 (smoke-test accuracy=0.94)
+[PASS] PyTorch         torch 2.11.0+cu128 - CUDA available - Tesla T4
+============================================================
+All checks passed. Environment is ready.</pre>
+  </div>
+
+  <hr class="rule">
+
+  <div class="entry" data-n="01">
+    <div class="stamp">DURATION<span class="n">3.5s</span></div>
+    <h2>Manual backprop gradient check</h2>
+    <div class="file">scripts/gradient_check.py</div>
+    <pre class="console">device = cuda (Tesla T4)
+manual loss = 1.225929   autograd loss = 1.225929
+
+param    manual_vs_autograd    manual_vs_numeric  autograd_vs_numeric
+---------------------------------------------------------------------
+W1                1.881e-08            3.111e-08            2.421e-08
+b1                4.238e-08            2.483e-08            4.047e-08
+W2                5.522e-08            6.808e-08            3.989e-08
+b2                5.064e-08            5.868e-08            3.350e-08
+
+tolerance = 1e-04  -&gt;  ALL PASS</pre>
+  </div>
+
+  <hr class="rule">
+
+  <div class="entry" data-n="02">
+    <h2>Double-descent width sweep</h2>
+    <div class="file">scripts/double_descent_sweep.py &middot; scripts/plot_double_descent.py</div>
+    <table class="runs"><caption>Four sweep variants, same data/widths/seeds/epochs</caption><thead><tr><th>Variant</th><th>Optimizer</th><th>Weight decay</th><th>Duration</th><th>Result</th></tr></thead><tbody><tr class="baseline-row"><td>Baseline</td><td>Adam (lr 1e-3)</td><td class="num">0.0</td><td class="dur">4m&nbsp;20.8s</td><td class="result">peak test error 0.3422 @ width 77; interpolates at width 64</td></tr><tr class=""><td>Regularized</td><td>Adam (lr 1e-3)</td><td class="num">0.01</td><td class="dur">4m&nbsp;18.0s</td><td class="result">peak test error 0.298 @ width 306; never interpolates (≤1% train err)</td></tr><tr class=""><td>Regularized</td><td>Adam (lr 1e-3)</td><td class="num">0.1</td><td class="dur">4m&nbsp;16.6s</td><td class="result">peak test error 0.29 @ width 2; never interpolates (≤1% train err)</td></tr><tr class=""><td>Optimizer ablation</td><td>SGD (lr 0.1, mom 0.9)</td><td class="num">0.0</td><td class="dur">3m&nbsp;48.6s</td><td class="result">peak test error 0.3708 @ width 19; interpolates at width 29</td></tr></tbody></table>
+    <div class="frames"><figure><img src="results/double_descent_t4gpu.png" alt="baseline, mean ±1 SEM across 10 seeds"><figcaption>double_descent_t4gpu.png &mdash; baseline, mean ±1 SEM across 10 seeds</figcaption></figure><figure><img src="results/double_descent_t4gpu_regularization.png" alt="weight decay comparison"><figcaption>double_descent_t4gpu_regularization.png &mdash; weight decay comparison</figcaption></figure><figure><img src="results/double_descent_t4gpu_optimizer.png" alt="Adam vs SGD"><figcaption>double_descent_t4gpu_optimizer.png &mdash; Adam vs SGD</figcaption></figure><figure><img src="results/double_descent_t4gpu_epochwise.png" alt="train/test error vs epoch by width"><figcaption>double_descent_t4gpu_epochwise.png &mdash; train/test error vs epoch by width</figcaption></figure></div>
+  </div>
+
+  <hr class="rule">
+
+  <div class="entry" data-n="03">
+    <h2>Grokking on modular addition (mod 97)</h2>
+    <div class="file">scripts/grokking_train.py &middot; scripts/plot_grokking.py &middot; scripts/plot_grokking_sweep.py</div>
+    <table class="runs"><caption>Axis 1 · weight decay (train_frac 0.4, seed 0)</caption><thead><tr><th>Weight decay</th><th>Duration</th><th>Transition step</th><th>Result</th></tr></thead><tbody><tr class=""><td class="num">0.0</td><td class="dur">45.9s</td><td class="never">never</td><td class="result">never fully grokked (final test_acc 0.0004)</td></tr><tr class=""><td class="num">0.1</td><td class="dur">46.9s</td><td class="never">never</td><td class="result">never fully grokked (final test_acc 0.0007)</td></tr><tr class=""><td class="num">0.5</td><td class="dur">46.5s</td><td class="never">never</td><td class="result">never fully grokked (final test_acc 0.2641)</td></tr><tr class="baseline-row"><td class="num">1.0</td><td class="dur">45.6s</td><td class="num">8600</td><td class="result">grok</td></tr><tr class=""><td class="num">2.0</td><td class="dur">46.0s</td><td class="num">3500</td><td class="result">grok</td></tr></tbody></table>
+    <table class="runs"><caption>Axis 2 · train fraction (weight_decay 1.0, seed 0)</caption><thead><tr><th>Train fraction</th><th>Duration</th><th>Transition step</th><th>Result</th></tr></thead><tbody><tr class=""><td class="num">0.2</td><td class="dur">40.7s</td><td class="never">never</td><td class="result">never fully grokked (final test_acc 0.0007)</td></tr><tr class=""><td class="num">0.3</td><td class="dur">40.3s</td><td class="num">12800</td><td class="result">grok</td></tr><tr class="baseline-row"><td class="num">0.4</td><td class="dur">45.6s</td><td class="num">8600</td><td class="result">grok</td></tr><tr class=""><td class="num">0.5</td><td class="dur">47.1s</td><td class="num">4900</td><td class="result">grok</td></tr><tr class=""><td class="num">0.6</td><td class="dur">47.4s</td><td class="num">3000</td><td class="result">grok</td></tr></tbody></table>
+    <table class="runs"><caption>Axis 3 · random seed (train_frac 0.4, weight_decay 1.0)</caption><thead><tr><th>Seed</th><th>Duration</th><th>Transition step</th><th>Result</th></tr></thead><tbody><tr class="baseline-row"><td class="num">0</td><td class="dur">45.6s</td><td class="num">8600</td><td class="result">grok</td></tr><tr class=""><td class="num">1</td><td class="dur">46.6s</td><td class="num">7700</td><td class="result">grok</td></tr><tr class=""><td class="num">2</td><td class="dur">47.4s</td><td class="num">10000</td><td class="result">grok</td></tr><tr class=""><td class="num">3</td><td class="dur">45.2s</td><td class="num">5300</td><td class="result">grok</td></tr><tr class=""><td class="num">4</td><td class="dur">47.0s</td><td class="num">8600</td><td class="result">grok</td></tr></tbody></table>
+    <p class="lede">Transition step across 5 seeds: mean 8040, std &asymp;1555.</p>
+    <div class="frames"><figure><img src="results/grokking_t4gpu.png" alt="baseline: accuracy, loss, weight norm"><figcaption>grokking_t4gpu.png &mdash; baseline: accuracy, loss, weight norm</figcaption></figure><figure><img src="results/grokking_t4gpu_weight_decay_sweep.png" alt="vs. weight decay"><figcaption>grokking_t4gpu_weight_decay_sweep.png &mdash; vs. weight decay</figcaption></figure><figure><img src="results/grokking_t4gpu_train_frac_sweep.png" alt="vs. train fraction"><figcaption>grokking_t4gpu_train_frac_sweep.png &mdash; vs. train fraction</figcaption></figure><figure><img src="results/grokking_t4gpu_seed_sweep.png" alt="across seeds"><figcaption>grokking_t4gpu_seed_sweep.png &mdash; across seeds</figcaption></figure></div>
+  </div>
+
+  <footer>
+    <div>19 training runs &middot; Tesla T4</div>
+    <div class="total">total wall-clock&nbsp;<span class="n">26m&nbsp;43.9s</span></div>
+    <div>Week-01-The-Gradient-Ledger &middot; tag t4gpu</div>
+  </footer>
+</div>
+</body>
+</html>
