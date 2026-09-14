@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Gradient Ledger &mdash; Hardware Comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #faf8f1; --band: #eef2e6; --band-strong: #e3ead9;
+    --ink: #202b23; --ink-soft: #55605a; --ink-faint: #85897f;
+    --rule: #c7cec0; --rule-strong: #9aa693;
+    --accent: #9a3324; --accent-soft: #f2e2dc;
+    --good: #2c6e3f; --good-soft: #e3ede5;
+    --brass: #8a6a2f; --brass-soft: #efe6d1; --link: #2c5a4a;
+    --font-display: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #14181a; --band: #1b241f; --band-strong: #212d25;
+      --ink: #e7ece4; --ink-soft: #b7bfb5; --ink-faint: #7c877e;
+      --rule: #333e37; --rule-strong: #48564c;
+      --accent: #e2795f; --accent-soft: #3a241d;
+      --good: #6fbf8b; --good-soft: #1c2e22;
+      --brass: #cca757; --brass-soft: #362c1a; --link: #7fbfa2;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #14181a; --band: #1b241f; --band-strong: #212d25;
+    --ink: #e7ece4; --ink-soft: #b7bfb5; --ink-faint: #7c877e;
+    --rule: #333e37; --rule-strong: #48564c;
+    --accent: #e2795f; --accent-soft: #3a241d;
+    --good: #6fbf8b; --good-soft: #1c2e22;
+    --brass: #cca757; --brass-soft: #362c1a; --link: #7fbfa2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink); font-family: var(--font-body);
+    font-size: 15.5px; line-height: 1.6; margin: 0;
+    padding-inline: 20px; padding-block: 40px 80px;
+  }
+  .sheet { max-width: 900px; margin-inline: auto; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+  }
+  .masthead { border-bottom: 3px double var(--rule-strong); padding-bottom: 22px; margin-bottom: 28px; }
+  .masthead h1 { font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 700; margin-top: 6px; }
+  .masthead p.dek { max-width: 66ch; color: var(--ink-soft); margin-top: 10px; font-size: 1.02rem; }
+
+  .headline {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;
+    margin-block: 24px 34px;
+  }
+  .headline .tile {
+    border: 1px solid var(--rule); background: var(--band); border-radius: 4px; padding: 14px 16px;
+  }
+  .headline .tile .k {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .headline .tile .v {
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    font-size: 22px; font-weight: 600; color: var(--ink); margin-top: 4px;
+  }
+  .headline .tile .sub { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+  .headline .tile.good .v { color: var(--good); }
+  .headline .tile.bad .v { color: var(--accent); }
+
+  h2.section { font-size: 1.4rem; font-weight: 600; margin-top: 48px; }
+  p.lede { color: var(--ink-soft); max-width: 70ch; margin-top: 8px; }
+
+  table.cmp { width: 100%; border-collapse: collapse; margin-block: 16px; font-size: 13.5px; }
+  table.cmp caption {
+    text-align: left; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px;
+  }
+  table.cmp th {
+    text-align: left; font-family: var(--font-mono); font-weight: 600; font-size: 11px;
+    letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule-strong); padding: 7px 10px;
+  }
+  table.cmp td {
+    padding: 7px 10px; border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums; vertical-align: top;
+  }
+  table.cmp tbody tr:nth-child(odd) { background: var(--band); }
+  table.cmp td.num { font-family: var(--font-mono); }
+  table.cmp td.faster { color: var(--good); font-family: var(--font-mono); font-weight: 600; }
+  table.cmp td.slower { color: var(--accent); font-family: var(--font-mono); font-weight: 600; }
+  table.cmp tr.group-row td { font-weight: 600; background: var(--band-strong); }
+  table.cmp td.match { color: var(--good); }
+  table.cmp td.mismatch { color: var(--accent); }
+
+  figure { margin: 0; border: 1px solid var(--rule); background: var(--paper); border-radius: 3px; overflow: hidden; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft);
+    padding: 9px 12px; border-top: 1px solid var(--rule); background: var(--band);
+  }
+  .rule { border: none; border-top: 1px solid var(--rule); margin-block: 40px; }
+  footer {
+    margin-top: 56px; padding-top: 22px; border-top: 3px double var(--rule-strong);
+    font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft);
+    display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="masthead">
+    <span class="eyebrow">Experiment Log &middot; Week 01 &middot; CST 627 &middot; Hardware Comparison</span>
+    <h1>The Gradient Ledger: CPU (VM) vs. T4 GPU</h1>
+    <p class="dek">Same 17-run suite, same code, two machines. Does a GPU actually help, and does the science (double descent, grokking) agree regardless of hardware?</p>
+  </div>
+
+  <div class="headline"><div class="tile bad"><div class="k">Double descent</div><div class="v">2.36&times; slower</div><div class="sub">T4 GPU: 7m 5.0s → 16m 43.9s</div></div><div class="tile good"><div class="k">Grokking</div><div class="v">4.46&times;</div><div class="sub">T4 GPU: 43m 59.7s → 9m 52.5s</div></div><div class="tile good"><div class="k">Overall (17 runs)</div><div class="v">1.92&times;</div><div class="sub">T4 GPU: 51m 4.6s → 26m 36.4s</div></div></div>
+
+  <h2 class="section">Hardware</h2>
+  <table class="cmp"><caption>Hardware &amp; environment</caption><thead><tr><th>Field</th><th>CPU (VM)</th><th>T4 GPU</th></tr></thead><tbody><tr><td>CPU</td><td class="num">13th Gen Intel(R) Core(TM) i9-13900HX</td><td class="num">Intel(R) Xeon(R) CPU @ 2.00GHz</td></tr><tr><td>Cores / threads</td><td class="num">16</td><td class="num">2</td></tr><tr><td>Memory</td><td class="num">6.2 GiB</td><td class="num">12.7 GiB</td></tr><tr><td>GPU</td><td class="num">none (CPU only)</td><td class="num">Tesla T4 (14.6 GiB)</td></tr><tr><td>OS</td><td class="num">Windows 2025Server</td><td class="num">Linux 6.6.122+</td></tr><tr><td>Python</td><td class="num">3.14.7</td><td class="num">3.13.15</td></tr><tr><td>torch</td><td class="num">2.14.0+cpu</td><td class="num">2.11.0+cu128</td></tr></tbody></table>
+
+  <h2 class="section">Timing: quick checks</h2>
+  <p class="lede">Both run in a couple of seconds either way &mdash; this is Python/import startup, not a meaningful hardware comparison.</p>
+  <table class="cmp"><thead><tr><th>Run</th><th>CPU (VM)</th><th>T4 GPU</th><th>Speedup</th></tr></thead><tbody><tr class="group-row"><td colspan="4">Quick checks (a couple seconds either way -- Python/import startup dominates, not compute)</td></tr><tr><td>Environment verification</td><td class="num">2.6s</td><td class="num">4.0s</td><td class="slower">T4 GPU 1.54x slower</td></tr><tr><td>Gradient check</td><td class="num">1.2s</td><td class="num">3.5s</td><td class="slower">T4 GPU 2.88x slower</td></tr></tbody></table>
+
+  <h2 class="section">Timing: double descent</h2>
+  <p class="lede">The double-descent model is tiny (max hidden width 575, ~500 training examples) &mdash; small enough that T4 GPU's per-step kernel-launch overhead can outweigh its parallelism advantage.</p>
+  <table class="cmp"><thead><tr><th>Run</th><th>CPU (VM)</th><th>T4 GPU</th><th>Speedup</th></tr></thead><tbody><tr class="group-row"><td colspan="4">Double descent sweep</td></tr><tr><td>Double descent: baseline</td><td class="num">1m 39.9s</td><td class="num">4m 20.8s</td><td class="slower">T4 GPU 2.61x slower</td></tr><tr><td>Double descent: wd=0.01</td><td class="num">1m 57.3s</td><td class="num">4m 18.0s</td><td class="slower">T4 GPU 2.20x slower</td></tr><tr><td>Double descent: wd=0.1</td><td class="num">1m 53.8s</td><td class="num">4m 16.6s</td><td class="slower">T4 GPU 2.25x slower</td></tr><tr><td>Double descent: SGD</td><td class="num">1m 33.9s</td><td class="num">3m 48.6s</td><td class="slower">T4 GPU 2.43x slower</td></tr></tbody></table>
+
+  <h2 class="section">Timing: grokking</h2>
+  <p class="lede">The grokking model is bigger (9409 pairs, embed dim 32, hidden dim 256) &mdash; here T4 GPU's advantage shows clearly and consistently across all 13 runs.</p>
+  <table class="cmp"><thead><tr><th>Run</th><th>CPU (VM)</th><th>T4 GPU</th><th>Speedup</th></tr></thead><tbody><tr class="group-row"><td colspan="4">Grokking (20,000 steps each)</td></tr><tr><td>Grokking baseline (wd=1.0, frac=0.4, seed=0)</td><td class="num">2m 40.6s</td><td class="num">45.6s</td><td class="faster">T4 GPU 3.52x faster</td></tr><tr><td>Grokking: wd=0.0</td><td class="num">2m 57.2s</td><td class="num">45.9s</td><td class="faster">T4 GPU 3.86x faster</td></tr><tr><td>Grokking: wd=0.1</td><td class="num">2m 38.9s</td><td class="num">46.9s</td><td class="faster">T4 GPU 3.39x faster</td></tr><tr><td>Grokking: wd=0.5</td><td class="num">2m 38.6s</td><td class="num">46.5s</td><td class="faster">T4 GPU 3.41x faster</td></tr><tr><td>Grokking: wd=2.0</td><td class="num">2m 45.9s</td><td class="num">46.0s</td><td class="faster">T4 GPU 3.61x faster</td></tr><tr><td>Grokking: frac=0.2</td><td class="num">1m 59.9s</td><td class="num">40.7s</td><td class="faster">T4 GPU 2.95x faster</td></tr><tr><td>Grokking: frac=0.3</td><td class="num">3m 3.5s</td><td class="num">40.3s</td><td class="faster">T4 GPU 4.56x faster</td></tr><tr><td>Grokking: frac=0.5</td><td class="num">4m 43.3s</td><td class="num">47.1s</td><td class="faster">T4 GPU 6.02x faster</td></tr><tr><td>Grokking: frac=0.6</td><td class="num">5m 25.9s</td><td class="num">47.4s</td><td class="faster">T4 GPU 6.88x faster</td></tr><tr><td>Grokking: seed=1</td><td class="num">5m 23.8s</td><td class="num">46.6s</td><td class="faster">T4 GPU 6.94x faster</td></tr><tr><td>Grokking: seed=2</td><td class="num">2m 43.8s</td><td class="num">47.4s</td><td class="faster">T4 GPU 3.46x faster</td></tr><tr><td>Grokking: seed=3</td><td class="num">4m 10.0s</td><td class="num">45.2s</td><td class="faster">T4 GPU 5.53x faster</td></tr><tr><td>Grokking: seed=4</td><td class="num">2m 48.1s</td><td class="num">47.0s</td><td class="faster">T4 GPU 3.58x faster</td></tr></tbody></table>
+
+  <figure><img src="results/hardware_comparison.png" alt="Per-run duration comparison"><figcaption>hardware_comparison.png &mdash; every run, both machines, log-scale duration</figcaption></figure>
+
+  <hr class="rule">
+
+  <h2 class="section">Does the science agree across hardware?</h2>
+  <p class="lede">Speed aside, the reported phenomena should not depend on which machine ran them. Absolute numbers differ (different RNG streams between CPU and CUDA even at the same seed &mdash; see SEED_AUDIT.md), but every qualitative conclusion below matches.</p>
+  <table class="cmp"><caption>Double descent: does the phenomenon agree across hardware?</caption><thead><tr><th>Variant</th><th>CPU (VM) peak</th><th>T4 GPU peak</th><th>CPU (VM) threshold</th><th>T4 GPU threshold</th><th>Conclusion</th></tr></thead><tbody><tr><td>baseline</td><td class="num">0.3438 @ w77</td><td class="num">0.3422 @ w77</td><td class="num">64</td><td class="num">64</td><td class="match">agree</td></tr><tr><td>wd0.01</td><td class="num">0.2982 @ w192</td><td class="num">0.298 @ w306</td><td class="num">never</td><td class="num">never</td><td class="match">agree</td></tr><tr><td>wd0.1</td><td class="num">0.29 @ w2</td><td class="num">0.29 @ w2</td><td class="num">never</td><td class="num">never</td><td class="match">agree</td></tr><tr><td>sgd</td><td class="num">0.3712 @ w19</td><td class="num">0.3708 @ w19</td><td class="num">29</td><td class="num">29</td><td class="match">agree</td></tr></tbody></table>
+  <table class="cmp"><caption>Grokking: did it grok on both, at roughly the same step?</caption><thead><tr><th>Variant</th><th>CPU (VM) step</th><th>T4 GPU step</th><th>Conclusion</th></tr></thead><tbody><tr><td>baseline</td><td class="num">8300</td><td class="num">8600</td><td class="match">agree</td></tr><tr><td>wd0.0</td><td class="num">never</td><td class="num">never</td><td class="match">agree</td></tr><tr><td>wd0.1</td><td class="num">never</td><td class="num">never</td><td class="match">agree</td></tr><tr><td>wd0.5</td><td class="num">never</td><td class="num">never</td><td class="match">agree</td></tr><tr><td>wd2.0</td><td class="num">3600</td><td class="num">3500</td><td class="match">agree</td></tr><tr><td>frac0.2</td><td class="num">never</td><td class="num">never</td><td class="match">agree</td></tr><tr><td>frac0.3</td><td class="num">14900</td><td class="num">12800</td><td class="match">agree</td></tr><tr><td>frac0.5</td><td class="num">4900</td><td class="num">4900</td><td class="match">agree</td></tr><tr><td>frac0.6</td><td class="num">3100</td><td class="num">3000</td><td class="match">agree</td></tr><tr><td>seed1</td><td class="num">7600</td><td class="num">7700</td><td class="match">agree</td></tr><tr><td>seed2</td><td class="num">9000</td><td class="num">10000</td><td class="match">agree</td></tr><tr><td>seed3</td><td class="num">5300</td><td class="num">5300</td><td class="match">agree</td></tr><tr><td>seed4</td><td class="num">8100</td><td class="num">8600</td><td class="match">agree</td></tr></tbody></table>
+
+  <footer>
+    <div>CPU (VM) grand total: 51m 8.4s &middot; T4 GPU grand total: 26m 43.9s (all 19 runs)</div>
+    <div>Week-01-The-Gradient-Ledger &middot; hardware comparison</div>
+  </footer>
+</div>
+</body>
+</html>

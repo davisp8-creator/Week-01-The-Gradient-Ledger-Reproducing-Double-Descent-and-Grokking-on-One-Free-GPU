@@ -1,0 +1,257 @@
+{
+  "tag": "cpu",
+  "runs": [
+    {
+      "label": "environment_verification",
+      "duration_s": 2.58,
+      "params": {},
+      "stdout": "\n============================================================\nEnvironment check summary\n============================================================\n[PASS] Python version  Python 3.14.7\n[PASS] NumPy           numpy 2.5.3\n[PASS] pandas          pandas 3.0.5\n[PASS] matplotlib      matplotlib 3.11.2\n[PASS] scikit-learn    scikit-learn 1.9.1 (smoke-test accuracy=0.94)\n[PASS] PyTorch         torch 2.14.0+cpu - CUDA not available (CPU only)\n============================================================\nAll checks passed. Environment is ready.\n"
+    },
+    {
+      "label": "gradient_check",
+      "duration_s": 1.221,
+      "params": {},
+      "stdout": "device = cpu (cpu)\nmanual loss = 1.042441   autograd loss = 1.042441\n\nparam    manual_vs_autograd    manual_vs_numeric  autograd_vs_numeric\n---------------------------------------------------------------------\nW1                1.719e-08            2.873e-08            2.605e-08\nb1                6.775e-09            3.589e-08            3.751e-08\nW2                2.649e-08            6.121e-08            7.447e-08\nb2                2.866e-08            2.092e-08            2.590e-08\n\ntolerance = 1e-04  -> ALL PASS\n"
+    },
+    {
+      "label": "double_descent_baseline",
+      "duration_s": 99.886,
+      "params": {
+        "optimizer": "adam",
+        "weight_decay": 0.0
+      },
+      "result": {
+        "interpolation_threshold": 64,
+        "peak_test_error": 0.3438,
+        "peak_width": 77
+      }
+    },
+    {
+      "label": "double_descent_wd0.01",
+      "duration_s": 117.348,
+      "params": {
+        "optimizer": "adam",
+        "weight_decay": 0.01
+      },
+      "result": {
+        "interpolation_threshold": null,
+        "peak_test_error": 0.2982,
+        "peak_width": 192
+      }
+    },
+    {
+      "label": "double_descent_wd0.1",
+      "duration_s": 113.804,
+      "params": {
+        "optimizer": "adam",
+        "weight_decay": 0.1
+      },
+      "result": {
+        "interpolation_threshold": null,
+        "peak_test_error": 0.29,
+        "peak_width": 2
+      }
+    },
+    {
+      "label": "double_descent_sgd",
+      "duration_s": 93.925,
+      "params": {
+        "optimizer": "sgd",
+        "lr": 0.1,
+        "momentum": 0.9,
+        "weight_decay": 0.0
+      },
+      "result": {
+        "interpolation_threshold": 29,
+        "peak_test_error": 0.3712,
+        "peak_width": 19
+      }
+    },
+    {
+      "label": "grokking_wd1.0_frac0.4_seed0",
+      "duration_s": 160.604,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.4,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": 8300,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_wd0.0",
+      "duration_s": 177.208,
+      "params": {
+        "weight_decay": 0.0,
+        "train_frac": 0.4,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": null,
+        "final_test_acc": 0.0007
+      }
+    },
+    {
+      "label": "grokking_wd0.1",
+      "duration_s": 158.862,
+      "params": {
+        "weight_decay": 0.1,
+        "train_frac": 0.4,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": null,
+        "final_test_acc": 0.0005
+      }
+    },
+    {
+      "label": "grokking_wd0.5",
+      "duration_s": 158.635,
+      "params": {
+        "weight_decay": 0.5,
+        "train_frac": 0.4,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": null,
+        "final_test_acc": 0.6798
+      }
+    },
+    {
+      "label": "grokking_wd2.0",
+      "duration_s": 165.938,
+      "params": {
+        "weight_decay": 2.0,
+        "train_frac": 0.4,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": 3600,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_frac0.2",
+      "duration_s": 119.938,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.2,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": null,
+        "final_test_acc": 0.0008
+      }
+    },
+    {
+      "label": "grokking_frac0.3",
+      "duration_s": 183.455,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.3,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": 14900,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_frac0.5",
+      "duration_s": 283.339,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.5,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": 4900,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_frac0.6",
+      "duration_s": 325.895,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.6,
+        "seed": 0
+      },
+      "result": {
+        "transition_step": 3100,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_seed1",
+      "duration_s": 323.811,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.4,
+        "seed": 1
+      },
+      "result": {
+        "transition_step": 7600,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_seed2",
+      "duration_s": 163.784,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.4,
+        "seed": 2
+      },
+      "result": {
+        "transition_step": 9000,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_seed3",
+      "duration_s": 250.045,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.4,
+        "seed": 3
+      },
+      "result": {
+        "transition_step": 5300,
+        "final_test_acc": 1.0
+      }
+    },
+    {
+      "label": "grokking_seed4",
+      "duration_s": 168.147,
+      "params": {
+        "weight_decay": 1.0,
+        "train_frac": 0.4,
+        "seed": 4
+      },
+      "result": {
+        "transition_step": 8100,
+        "final_test_acc": 1.0
+      }
+    }
+  ],
+  "hardware": {
+    "os": "Windows 2025Server",
+    "os_version": "10.0.26100",
+    "python_version": "3.14.7",
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "cpu_logical_cores": 16,
+    "ram_gib": 6.2,
+    "ram_note": "snapshot at run time -- Hyper-V Dynamic Memory can reallocate RAM to/from this VM between runs, so this figure is not a fixed spec",
+    "cuda_available": false,
+    "gpu_name": null,
+    "gpu_vram_gib": null,
+    "torch_version": "2.14.0+cpu",
+    "numpy_version": "2.5.3",
+    "pandas_version": "3.0.5",
+    "matplotlib_version": "3.11.2",
+    "sklearn_version": "1.9.1"
+  }
+}
