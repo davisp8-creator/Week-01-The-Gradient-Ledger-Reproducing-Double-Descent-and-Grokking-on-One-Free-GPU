@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Gradient Ledger &mdash; Experiment Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --paper:        #faf8f1;
+    --band:         #eef2e6;
+    --band-strong:  #e3ead9;
+    --ink:          #202b23;
+    --ink-soft:     #55605a;
+    --ink-faint:    #85897f;
+    --rule:         #c7cec0;
+    --rule-strong:  #9aa693;
+    --accent:       #9a3324;
+    --accent-soft:  #f2e2dc;
+    --brass:        #8a6a2f;
+    --brass-soft:   #efe6d1;
+    --link:         #2c5a4a;
+
+    --font-display: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --font-body:    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono:    "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper:        #14181a;
+      --band:         #1b241f;
+      --band-strong:  #212d25;
+      --ink:          #e7ece4;
+      --ink-soft:     #b7bfb5;
+      --ink-faint:    #7c877e;
+      --rule:         #333e37;
+      --rule-strong:  #48564c;
+      --accent:       #e2795f;
+      --accent-soft:  #3a241d;
+      --brass:        #cca757;
+      --brass-soft:   #362c1a;
+      --link:         #7fbfa2;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper:        #14181a;
+    --band:         #1b241f;
+    --band-strong:  #212d25;
+    --ink:          #e7ece4;
+    --ink-soft:     #b7bfb5;
+    --ink-faint:    #7c877e;
+    --rule:         #333e37;
+    --rule-strong:  #48564c;
+    --accent:       #e2795f;
+    --accent-soft:  #3a241d;
+    --brass:        #cca757;
+    --brass-soft:   #362c1a;
+    --link:         #7fbfa2;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.6;
+    margin: 0;
+    padding-inline: 20px;
+    padding-block: 40px 80px;
+  }
+
+  .sheet {
+    max-width: 860px;
+    margin-inline: auto;
+  }
+
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    border-bottom: 3px double var(--rule-strong);
+    padding-bottom: 22px;
+    margin-bottom: 22px;
+  }
+  .masthead h1 {
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 700;
+    margin-top: 6px;
+  }
+  .masthead p.dek {
+    max-width: 62ch;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    font-size: 1.02rem;
+  }
+
+  /* ---------- device manifest ---------- */
+  .manifest {
+    background: var(--band);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 16px 20px;
+    margin-block: 26px 34px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px 24px;
+  }
+  .manifest .field .k {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .manifest .field .v {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13.5px;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+  .manifest .field .v.note { font-family: var(--font-body); color: var(--ink-soft); font-size: 13px; }
+
+  /* ---------- entries ---------- */
+  .entry {
+    position: relative;
+    padding-left: 54px;
+    margin-block: 40px;
+  }
+  .entry::before {
+    content: attr(data-n);
+    position: absolute;
+    left: 0;
+    top: 2px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    width: 34px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .entry h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .entry .file {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--link);
+  }
+  .entry .lede {
+    color: var(--ink-soft);
+    max-width: 68ch;
+    margin-top: 8px;
+  }
+
+  .stamp {
+    float: right;
+    border: 1px solid var(--brass);
+    color: var(--brass);
+    background: var(--brass-soft);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 5px 10px;
+    border-radius: 2px;
+    text-align: center;
+    margin-left: 14px;
+    margin-bottom: 8px;
+  }
+  .stamp .n { display: block; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  table.runs {
+    width: 100%;
+    border-collapse: collapse;
+    margin-block: 18px;
+    font-size: 13.5px;
+  }
+  table.runs caption {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  table.runs th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule-strong);
+    padding: 7px 10px;
+  }
+  table.runs td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+    vertical-align: top;
+  }
+  table.runs tbody tr:nth-child(odd) { background: var(--band); }
+  table.runs td.num, table.runs td.dur { font-family: var(--font-mono); }
+  table.runs td.result { font-family: var(--font-body); color: var(--ink-soft); max-width: 30ch; }
+  table.runs tr.baseline-row td { font-weight: 600; }
+  table.runs td.never { color: var(--accent); font-family: var(--font-mono); }
+
+  .frames {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 18px;
+    margin-block: 20px;
+  }
+  figure {
+    margin: 0;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 9px 12px;
+    border-top: 1px solid var(--rule);
+    background: var(--band);
+  }
+
+  .rule {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin-block: 40px;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 3px double var(--rule-strong);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    justify-content: space-between;
+  }
+  footer .total .n { color: var(--accent); font-weight: 600; font-size: 14px; }
+
+  @media (max-width: 480px) {
+    .entry { padding-left: 0; }
+    .entry::before { position: static; margin-bottom: 8px; }
+    .stamp { float: none; display: inline-block; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="masthead">
+    <span class="eyebrow">Experiment Log &middot; Week 01 &middot; CST 627</span>
+    <h1>The Gradient Ledger</h1>
+    <p class="dek">A record of every verification and sweep run for Dr. Raman's triage-classifier question &mdash; bug or phenomenon? Backprop is checked against autograd and finite differences, then double descent and grokking are reproduced and stress-tested against weight decay, optimizer choice, training-data fraction, and random seed.</p>
+  </div>
+
+  <div class="manifest">
+    <div class="field"><div class="k">Host</div><div class="v note">Hyper-V guest (Windows Server VM)</div></div>
+    <div class="field"><div class="k">CPU</div><div class="v">Intel Core i9-13900HX</div></div>
+    <div class="field"><div class="k">Cores / threads exposed</div><div class="v">8 / 16</div></div>
+    <div class="field"><div class="k">Memory allocated</div><div class="v">7.8 GiB</div></div>
+    <div class="field"><div class="k">GPU</div><div class="v note">none passed through &mdash; CPU only</div></div>
+    <div class="field"><div class="k">OS</div><div class="v note">Windows Server 2025 Standard, build 10.0.26100</div></div>
+    <div class="field"><div class="k">Python</div><div class="v">3.14.7</div></div>
+    <div class="field"><div class="k">torch</div><div class="v">2.14.0+cpu</div></div>
+    <div class="field"><div class="k">numpy / pandas</div><div class="v">2.5.3 / 3.0.5</div></div>
+    <div class="field"><div class="k">matplotlib / scikit-learn</div><div class="v">3.11.2 / 1.9.1</div></div>
+  </div>
+
+  <!-- ================= ENTRY 00 ================= -->
+  <div class="entry" data-n="00">
+    <div class="stamp">DURATION<span class="n">&lt;1s</span></div>
+    <h2>Environment verification</h2>
+    <div class="file">scripts/test_environment.py</div>
+    <p class="lede">Imports and exercises each required library with a real operation (matrix inverse, groupby, headless PNG render, a fit/score pass, an autograd backward pass) rather than just checking that it imports, and auto-installs anything missing via pip.</p>
+    <table class="runs">
+      <thead><tr><th>Check</th><th>Detail</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Python</td><td class="num">3.14.7</td><td class="result">PASS</td></tr>
+        <tr><td>NumPy</td><td class="num">2.5.3</td><td class="result">PASS</td></tr>
+        <tr><td>pandas</td><td class="num">3.0.5</td><td class="result">PASS</td></tr>
+        <tr><td>matplotlib</td><td class="num">3.11.2</td><td class="result">PASS</td></tr>
+        <tr><td>scikit-learn</td><td class="num">1.9.1</td><td class="result">PASS &mdash; smoke-test accuracy 0.94</td></tr>
+        <tr><td>PyTorch</td><td class="num">2.14.0+cpu</td><td class="result">PASS &mdash; CUDA not available (CPU only)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ================= ENTRY 01 ================= -->
+  <div class="entry" data-n="01">
+    <div class="stamp">DURATION<span class="n">&lt;1s</span></div>
+    <h2>Manual backprop gradient check</h2>
+    <div class="file">scripts/gradient_check.py</div>
+    <p class="lede">A two-layer MLP (Linear&rarr;ReLU&rarr;Linear, softmax cross-entropy) with a hand-derived backward pass computed in plain tensor ops &mdash; no autograd. Checked against <code>torch.autograd</code> and against central finite differences (step h&nbsp;=&nbsp;1e-5, evaluated in float64 to avoid cancellation) on a single 8-example minibatch, in_dim=5, hidden=6, out=3.</p>
+    <table class="runs">
+      <caption>Cross-device reproduction</caption>
+      <thead><tr><th>Device</th><th>Loss</th><th>Max rel. error (any tensor)</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>This device (CPU)</td><td class="num">1.042441</td><td class="num">~7.4&times;10<sup>-8</sup></td><td class="result">ALL PASS (tol 1e-4)</td></tr>
+        <tr><td>Colab T4 (CUDA)</td><td class="num">1.225929</td><td class="num">~5.5&times;10<sup>-8</sup></td><td class="result">ALL PASS (tol 1e-4)</td></tr>
+      </tbody>
+    </table>
+    <p class="lede">Loss differs by device because <code>torch.randn(..., device="cuda")</code> draws from a different RNG stream than CPU even under the same <code>manual_seed</code> &mdash; noted in <span class="file">SEED_AUDIT.md</span>. Both devices agree the manual gradients are correct to ~1e-7.</p>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ================= ENTRY 02 ================= -->
+  <div class="entry" data-n="02">
+    <h2>Double-descent width sweep</h2>
+    <div class="file">scripts/double_descent_sweep.py &middot; scripts/plot_double_descent.py &middot; scripts/plot_double_descent_epochwise.py</div>
+    <p class="lede">Synthetic binary classification (1000 samples, 10 features, 20% label noise, 50/50 train/test split), swept across a two-layer MLP's hidden width. Widths are auto-centered on the analytic interpolation threshold (&asymp;38 for this data size) rather than fixed powers of two: <span class="num">2, 4, 8, 13, 19, 29, 38, 51, 64, 77, 115, 192, 306, 460, 575</span>. 10 seeds &times; 1000 epochs per run.</p>
+
+    <table class="runs">
+      <caption>Four sweep variants, same data/widths/seeds/epochs</caption>
+      <thead><tr><th>Variant</th><th>Optimizer</th><th>Weight decay</th><th>Duration</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr class="baseline-row"><td>Baseline</td><td>Adam (lr 1e-3)</td><td class="num">0</td><td class="dur">1m&nbsp;39.9s</td><td class="result">peak test error 0.344 @ width 77; interpolates (&le;1% train err) at width 64</td></tr>
+        <tr><td>Regularized</td><td>Adam (lr 1e-3)</td><td class="num">0.01</td><td class="dur">1m&nbsp;57.3s</td><td class="result">flat ~0.29; <span class="never">never interpolates</span></td></tr>
+        <tr><td>Regularized</td><td>Adam (lr 1e-3)</td><td class="num">0.1</td><td class="dur">1m&nbsp;53.8s</td><td class="result">flat ~0.277; <span class="never">never interpolates</span></td></tr>
+        <tr><td>Optimizer ablation</td><td>SGD (lr 0.1, mom 0.9)</td><td class="num">0</td><td class="dur">1m&nbsp;33.9s</td><td class="result">sharper peak 0.371 @ width 19; interpolates at width 29</td></tr>
+      </tbody>
+    </table>
+
+    <div class="frames">
+      <figure><img src="results/double_descent.png" alt="Test error vs hidden width, baseline"><figcaption>double_descent.png &mdash; baseline, mean &plusmn;1 SEM across 10 seeds</figcaption></figure>
+      <figure><img src="results/double_descent_regularization.png" alt="Regularization comparison"><figcaption>double_descent_regularization.png &mdash; weight decay erases the bump</figcaption></figure>
+      <figure><img src="results/double_descent_optimizer.png" alt="Optimizer comparison"><figcaption>double_descent_optimizer.png &mdash; SGD peaks sharper &amp; earlier than Adam</figcaption></figure>
+      <figure><img src="results/double_descent_epochwise.png" alt="Train and test error vs epoch by width"><figcaption>double_descent_epochwise.png &mdash; wide models overfit past their best epoch</figcaption></figure>
+    </div>
+    <p class="lede">The epoch-wise view (post-hoc analysis of the baseline run, no additional training) shows widths 77 and 575 reach their <em>best</em> test error near epoch 20&ndash;50 before drifting back up by epoch 1000 &mdash; the width-wise curve above is entangled with epoch-wise overfitting, not a pure capacity effect.</p>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ================= ENTRY 03 ================= -->
+  <div class="entry" data-n="03">
+    <h2>Grokking on modular addition (mod 97)</h2>
+    <div class="file">scripts/grokking_train.py &middot; scripts/plot_grokking.py &middot; scripts/plot_grokking_sweep.py</div>
+    <p class="lede">Every (a,b) pair in Z<sub>97</sub>&times;Z<sub>97</sub>, label (a+b) mod 97, embedding+MLP classifier, full-batch AdamW, 20,000 steps, logged every 100 steps. Three axes swept one at a time from the baseline (train_frac=0.4, weight_decay=1.0, seed=0).</p>
+
+    <table class="runs">
+      <caption>Axis 1 &middot; weight decay (train_frac 0.4, seed 0)</caption>
+      <thead><tr><th>Weight decay</th><th>Duration</th><th>Transition step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td class="num">0.0</td><td class="dur">2m&nbsp;57.2s</td><td class="never">never</td><td class="result">test_acc stuck ~0.001; weight L2 norm grows unbounded to ~101</td></tr>
+        <tr><td class="num">0.1</td><td class="dur">2m&nbsp;38.9s</td><td class="never">never</td><td class="result">weight norm humps to 90 then relaxes to 70; no generalization</td></tr>
+        <tr><td class="num">0.5</td><td class="dur">2m&nbsp;38.6s</td><td class="num">&mdash;</td><td class="result">rising late &mdash; test_acc 0.680 by step 19999, not yet converged</td></tr>
+        <tr class="baseline-row"><td class="num">1.0</td><td class="dur">2m&nbsp;40.6s</td><td class="num">8300</td><td class="result">full grok (baseline)</td></tr>
+        <tr><td class="num">2.0</td><td class="dur">2m&nbsp;45.9s</td><td class="num">3600</td><td class="result">fastest grok in the sweep</td></tr>
+      </tbody>
+    </table>
+
+    <table class="runs">
+      <caption>Axis 2 &middot; train fraction (weight_decay 1.0, seed 0)</caption>
+      <thead><tr><th>Train fraction</th><th>Duration</th><th>Transition step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td class="num">0.2</td><td class="dur">1m&nbsp;59.9s</td><td class="never">never</td><td class="result">insufficient data to generalize in budget</td></tr>
+        <tr><td class="num">0.3</td><td class="dur">3m&nbsp;3.5s</td><td class="num">14900</td><td class="result">grok</td></tr>
+        <tr class="baseline-row"><td class="num">0.4</td><td class="dur">2m&nbsp;40.6s</td><td class="num">8300</td><td class="result">grok (baseline, shared row above)</td></tr>
+        <tr><td class="num">0.5</td><td class="dur">4m&nbsp;43.3s</td><td class="num">4900</td><td class="result">grok</td></tr>
+        <tr><td class="num">0.6</td><td class="dur">5m&nbsp;25.9s</td><td class="num">3100</td><td class="result">grok &mdash; fastest and largest train set</td></tr>
+      </tbody>
+    </table>
+
+    <table class="runs">
+      <caption>Axis 3 &middot; random seed (train_frac 0.4, weight_decay 1.0)</caption>
+      <thead><tr><th>Seed</th><th>Duration</th><th>Transition step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr class="baseline-row"><td class="num">0</td><td class="dur">2m&nbsp;40.6s</td><td class="num">8300</td><td class="result">grok (baseline, shared row above)</td></tr>
+        <tr><td class="num">1</td><td class="dur">5m&nbsp;23.8s</td><td class="num">7600</td><td class="result">grok</td></tr>
+        <tr><td class="num">2</td><td class="dur">2m&nbsp;43.8s</td><td class="num">9000</td><td class="result">grok</td></tr>
+        <tr><td class="num">3</td><td class="dur">4m&nbsp;10.0s</td><td class="num">5300</td><td class="result">grok</td></tr>
+        <tr><td class="num">4</td><td class="dur">2m&nbsp;48.1s</td><td class="num">8100</td><td class="result">grok</td></tr>
+      </tbody>
+    </table>
+    <p class="lede">Transition step across 5 seeds: mean 7660, std &asymp;1260 &mdash; meaningfully seed-dependent, but every seed groks well inside the 20,000-step budget. Not a seed=0 fluke.</p>
+
+    <div class="frames">
+      <figure><img src="results/grokking.png" alt="Grokking accuracy, loss, weight norm vs step"><figcaption>grokking.png &mdash; baseline: accuracy, loss (log), weight norm</figcaption></figure>
+      <figure><img src="results/grokking_weight_decay_sweep.png" alt="Grokking vs weight decay"><figcaption>grokking_weight_decay_sweep.png &mdash; more decay groks earlier</figcaption></figure>
+      <figure><img src="results/grokking_train_frac_sweep.png" alt="Grokking vs train fraction"><figcaption>grokking_train_frac_sweep.png &mdash; more data groks earlier</figcaption></figure>
+      <figure><img src="results/grokking_seed_sweep.png" alt="Grokking across seeds"><figcaption>grokking_seed_sweep.png &mdash; 5 seeds, same story</figcaption></figure>
+    </div>
+  </div>
+
+  <footer>
+    <div>17 training runs &middot; this device, CPU-only</div>
+    <div class="total">total wall-clock&nbsp;<span class="n">&asymp;51m&nbsp;5s</span></div>
+    <div>Week-01-The-Gradient-Ledger &middot; branch main</div>
+  </footer>
+
+</div>
+</body>
+</html>
